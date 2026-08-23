@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getDb } from '@/lib/db';
+import { getBaseUrl } from '@/lib/utils';
 
 export async function POST(request: Request) {
   try {
@@ -12,6 +13,9 @@ export async function POST(request: Request) {
 
     const db = await getDb();
     const lowerEmail = email.toLowerCase();
+    
+    const baseUrl = getBaseUrl(request);
+    const isSecure = baseUrl.startsWith('https://');
 
     const { results: otpResults } = await db.prepare('SELECT * FROM otps WHERE email = ? ORDER BY expires_at DESC LIMIT 1').bind(lowerEmail).all();
     if (!otpResults || otpResults.length === 0) return NextResponse.json({ error: 'کدی برای این ایمیل یافت نشد' }, { status: 400 });
@@ -30,7 +34,12 @@ export async function POST(request: Request) {
     await db.prepare('DELETE FROM otps WHERE email = ?').bind(lowerEmail).run();
 
     const cookieStore = await cookies();
-    cookieStore.set('user_session', sessionToken, { httpOnly: true, secure: true, path: '/', maxAge: 60 * 60 * 24 * 7 });
+    cookieStore.set('user_session', sessionToken, { 
+      httpOnly: true, 
+      secure: isSecure, // 👈 تنظیم هوشمندانه
+      path: '/', 
+      maxAge: 60 * 60 * 24 * 7 
+    });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

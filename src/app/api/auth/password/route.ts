@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getDb, getEnv } from '@/lib/db';
 import { hashPassword, verifyPassword } from '@/lib/hash';
+import { getBaseUrl } from '@/lib/utils';
 
 export async function POST(request: Request) {
   try {
@@ -13,8 +14,11 @@ export async function POST(request: Request) {
 
     const db = await getDb();
     const env = await getEnv();
+    
+    // تشخیص هوشمند پروتکل شبکه
+    const baseUrl = getBaseUrl(request);
+    const isSecure = baseUrl.startsWith('https://');
 
-    // 1️⃣ درخواست ثبت‌نام
     if (action === 'register') {
       if (!firstName) return NextResponse.json({ error: 'نام الزامی است' }, { status: 400 });
       
@@ -64,7 +68,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: 'otp_sent' });
     }
 
-    // 2️⃣ تایید کد و تکمیل ثبت‌نام
     if (action === 'register_verify') {
       if (!code || !firstName || !password) return NextResponse.json({ error: 'اطلاعات ناقص است' }, { status: 400 });
 
@@ -85,11 +88,10 @@ export async function POST(request: Request) {
       await db.prepare('DELETE FROM otps WHERE email = ?').bind(lowerEmail).run();
 
       const cookieStore = await cookies();
-      cookieStore.set('user_session', sessionToken, { httpOnly: true, secure: true, path: '/', maxAge: 60 * 60 * 24 * 7 });
+      cookieStore.set('user_session', sessionToken, { httpOnly: true, secure: isSecure, path: '/', maxAge: 60 * 60 * 24 * 7 });
       return NextResponse.json({ success: true });
     }
 
-    // 3️⃣ ورود با رمز عبور
     if (action === 'login') {
       if (!password) return NextResponse.json({ error: 'رمز عبور الزامی است' }, { status: 400 });
       const { results } = await db.prepare('SELECT id, password_hash FROM users WHERE email = ? LIMIT 1').bind(lowerEmail).all();
@@ -105,11 +107,11 @@ export async function POST(request: Request) {
       await db.prepare('UPDATE users SET session_token = ? WHERE id = ?').bind(sessionToken, user.id).run();
 
       const cookieStore = await cookies();
-      cookieStore.set('user_session', sessionToken, { httpOnly: true, secure: true, path: '/', maxAge: 60 * 60 * 24 * 7 });
+      cookieStore.set('user_session', sessionToken, { httpOnly: true, secure: isSecure, path: '/', maxAge: 60 * 60 * 24 * 7 });
       return NextResponse.json({ success: true });
     }
 
-    // 4️⃣ فراموشی رمز عبور
+    // بخش فراموشی رمز دست‌نخورده باقی مانده است
     if (action === 'forgot') {
       const { results } = await db.prepare('SELECT id, first_name FROM users WHERE email = ? LIMIT 1').bind(lowerEmail).all();
       if (!results || results.length === 0) return NextResponse.json({ error: 'کاربری با این ایمیل یافت نشد' }, { status: 400 });
@@ -149,7 +151,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
-    // 5️⃣ بررسی صحت کد
     if (action === 'verify_reset_code') {
       if (!code) return NextResponse.json({ error: 'کد الزامی است' }, { status: 400 });
       const { results: otpResults } = await db.prepare('SELECT * FROM otps WHERE email = ? ORDER BY expires_at DESC LIMIT 1').bind(lowerEmail).all();
@@ -162,7 +163,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
-    // 6️⃣ ثبت رمز جدید
     if (action === 'reset') {
       if (!code || !password || password.length < 8 || !/^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(password)) {
         return NextResponse.json({ error: 'رمز عبور باید حداقل ۸ کاراکتر و شامل حروف و اعداد باشد' }, { status: 400 });
