@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getEnv, getDb } from '@/lib/db';
+import { getDb, getEnv } from '@/lib/db';
 
 export async function POST(request: Request) {
   try {
@@ -12,6 +12,7 @@ export async function POST(request: Request) {
     const db = await getDb();
     const env = await getEnv();
     
+    // بررسی وجود کاربر در دیتابیس
     const { results: userCheck } = await db.prepare('SELECT id FROM users WHERE email = ? LIMIT 1').bind(lowerEmail).all();
     if (!userCheck || userCheck.length === 0) {
       return NextResponse.json({ error: 'حسابی با این ایمیل یافت نشد. لطفاً ابتدا ثبت‌نام کنید.' }, { status: 400 });
@@ -33,17 +34,25 @@ export async function POST(request: Request) {
     
     const htmlContent = `
       <div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-        <div style="background-color: #2563eb; padding: 24px; text-align: center;"><h1 style="color: #ffffff; margin: 0; font-size: 24px;">تست‌بان</h1></div>
+        <div style="background-color: #2563eb; padding: 24px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 24px;">تست‌بان</h1>
+        </div>
         <div style="padding: 32px; text-align: center;">
           <h2 style="color: #1e293b; font-size: 20px; margin-bottom: 16px;">ورود به سامانه</h2>
-          <p style="color: #475569; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">کد تایید یک‌بار مصرف شما برای ورود به سامانه تست‌بان:</p>
-          <div style="background-color: #f1f5f9; border-radius: 12px; padding: 20px; margin-bottom: 24px;"><span style="font-size: 32px; font-weight: bold; color: #2563eb; letter-spacing: 8px;">${code}</span></div>
-          <p style="color: #64748b; font-size: 13px;">این کد تا ۵ دقیقه دیگر اعتبار دارد.</p>
+          <p style="color: #475569; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
+            کاربر گرامی، کد تایید یک‌بار مصرف شما برای ورود به سامانه تست‌بان صادر شد:
+          </p>
+          <div style="background-color: #f1f5f9; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+            <span style="font-size: 32px; font-weight: bold; color: #2563eb; letter-spacing: 8px;">${code}</span>
+          </div>
+          <p style="color: #64748b; font-size: 13px;">این کد تا ۵ دقیقه دیگر اعتبار دارد. لطفاً آن را در اختیار دیگران قرار ندهید.</p>
         </div>
       </div>
     `;
 
-    const emailBody = [`From: TestBaan <testbaan10@gmail.com>`, `To: ${lowerEmail}`, `Subject: ${utf8Subject}`, `Content-Type: text/html; charset=utf-8`, ``, htmlContent].join('\r\n');
+    const emailBody = [
+      `From: TestBaan <testbaan10@gmail.com>`, `To: ${lowerEmail}`, `Subject: ${utf8Subject}`, `Content-Type: text/html; charset=utf-8`, ``, htmlContent
+    ].join('\r\n');
 
     await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
       method: "POST",
