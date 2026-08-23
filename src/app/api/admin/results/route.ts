@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { getDb } from '@/lib/db';
 
 export async function GET() {
   try {
@@ -9,8 +9,7 @@ export async function GET() {
       return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
     }
 
-    const { env } = await getCloudflareContext();
-    const db = (env as any).testbaan_db;
+    const db = await getDb();
 
     if (!db) return NextResponse.json({ error: 'دیتابیس متصل نیست' }, { status: 500 });
 

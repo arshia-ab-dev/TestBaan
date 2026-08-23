@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { getDb } from '@/lib/db';
 import { DEFAULT_TAGS } from '@/lib/tags';
 
 export async function GET() {
@@ -8,12 +8,10 @@ export async function GET() {
     const user = await getAuthUser();
     if (!user) return NextResponse.json({ error: 'غیرمجاز' }, { status: 401 });
 
-    const { env } = await getCloudflareContext();
-    const db = (env as any).testbaan_db;
+    const db = await getDb();
 
     const { results } = await db.prepare("SELECT * FROM user_tags WHERE user_id = ? ORDER BY created_at ASC").bind(user.id).all();
 
-    // اگر کاربر تگی نداشت، تگ‌های پیش‌فرض را برایش بساز
     if (!results || results.length === 0) {
       const createdTags = [];
       for (const dt of DEFAULT_TAGS) {
@@ -38,8 +36,7 @@ export async function POST(request: Request) {
     const { name, color } = (await request.json()) as any;
     if (!name || !color) return NextResponse.json({ error: 'اطلاعات ناقص است' }, { status: 400 });
 
-    const { env } = await getCloudflareContext();
-    const db = (env as any).testbaan_db;
+    const db = await getDb();
 
     const id = Math.floor(1000000000 + Math.random() * 9000000000).toString();
     await db.prepare("INSERT INTO user_tags (id, user_id, name, color) VALUES (?, ?, ?, ?)").bind(id, user.id, name.trim(), color).run();
@@ -59,8 +56,7 @@ export async function DELETE(request: Request) {
     const tagId = searchParams.get('id');
     if (!tagId) return NextResponse.json({ error: 'شناسه تگ الزامی است' }, { status: 400 });
 
-    const { env } = await getCloudflareContext();
-    const db = (env as any).testbaan_db;
+    const db = await getDb();
 
     await db.prepare("DELETE FROM user_tags WHERE id = ? AND user_id = ?").bind(tagId, user.id).run();
     return NextResponse.json({ success: true });

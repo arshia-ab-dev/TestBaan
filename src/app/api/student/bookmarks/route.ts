@@ -1,20 +1,17 @@
 import { NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { getDb } from '@/lib/db';
 
 export async function GET() {
   try {
     const user = await getAuthUser();
     if (!user) return NextResponse.json({ error: 'غیرمجاز' }, { status: 401 });
 
-    const { env } = await getCloudflareContext();
-    const db = (env as any).testbaan_db;
+    const db = await getDb();
 
-    // ۱. دریافت تمام تگ‌های کاربر
     const { results: userTags } = await db.prepare("SELECT * FROM user_tags WHERE user_id = ?").bind(user.id).all();
     const tagsMap = new Map((userTags || []).map((t: any) => [t.id, t]));
 
-    // ۲. دریافت تمام آزمون‌هایی که پیش‌نویس یا تگ دارند
     const query = `
       SELECT 
         p.answer_sheet_id, p.draft_answers, p.question_flags,
