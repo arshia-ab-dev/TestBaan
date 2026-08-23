@@ -5,7 +5,7 @@ import { getBaseUrl } from '@/lib/utils';
 
 export async function GET(request: Request) {
   const baseUrl = getBaseUrl(request);
-  const isSecure = baseUrl.startsWith('https://'); // 👈 تشخیص هوشمند پروتکل
+  const isSecure = baseUrl.startsWith('https://');
   const redirectUri = `${baseUrl}/api/auth/callback/google`;
 
   try {
@@ -66,7 +66,8 @@ export async function GET(request: Request) {
     const cookieStore = await cookies();
     cookieStore.set('user_session', sessionToken, {
       httpOnly: true, 
-      secure: isSecure, // 👈 تنظیم هوشمندانه
+      secure: isSecure, 
+      sameSite: 'lax', // 👈 اضافه شد
       path: '/', 
       maxAge: 60 * 60 * 24 * 7,
     });

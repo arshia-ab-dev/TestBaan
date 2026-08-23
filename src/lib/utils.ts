@@ -18,22 +18,20 @@ export function toEnNum(val: string | number | null | undefined): string {
 
 // تابع تشخیص دقیق دامنه اصلی سایت
 export function getBaseUrl(request?: Request): string {
-  if (process.env.APP_URL) {
-    return process.env.APP_URL.replace(/\/$/, '');
-  }
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
+  // ۱. بررسی متغیرهای محیطی با فیلتر کردن کاراکتر پنهان BOM ویندوز
+  let envUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
+  if (envUrl) {
+    envUrl = envUrl.replace(/^\uFEFF/, '').trim(); // حذف BOM
+    return envUrl.replace(/\/$/, '');
   }
 
+  // ۲. استخراج دقیق پروتکل از خود ریکوئست
   if (request) {
-    const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
-    const proto = request.headers.get('x-forwarded-proto') || (host?.includes('localhost') ? 'http' : 'http');
-    if (host) {
-      return `${proto}://${host}`;
-    }
     try {
       const url = new URL(request.url);
-      return `${url.protocol}//${url.host}`;
+      const host = request.headers.get('x-forwarded-host') || url.host;
+      const proto = request.headers.get('x-forwarded-proto') || url.protocol.replace(':', '');
+      return `${proto}://${host}`;
     } catch {}
   }
 

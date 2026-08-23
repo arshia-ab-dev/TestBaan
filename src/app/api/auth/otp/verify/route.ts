@@ -36,7 +36,8 @@ export async function POST(request: Request) {
     const cookieStore = await cookies();
     cookieStore.set('user_session', sessionToken, { 
       httpOnly: true, 
-      secure: isSecure, // 👈 تنظیم هوشمندانه
+      secure: isSecure,
+      sameSite: 'lax', // 👈 اضافه شد
       path: '/', 
       maxAge: 60 * 60 * 24 * 7 
     });

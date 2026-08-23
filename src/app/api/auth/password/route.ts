@@ -15,7 +15,6 @@ export async function POST(request: Request) {
     const db = await getDb();
     const env = await getEnv();
     
-    // تشخیص هوشمند پروتکل شبکه
     const baseUrl = getBaseUrl(request);
     const isSecure = baseUrl.startsWith('https://');
 
@@ -88,7 +87,13 @@ export async function POST(request: Request) {
       await db.prepare('DELETE FROM otps WHERE email = ?').bind(lowerEmail).run();
 
       const cookieStore = await cookies();
-      cookieStore.set('user_session', sessionToken, { httpOnly: true, secure: isSecure, path: '/', maxAge: 60 * 60 * 24 * 7 });
+      cookieStore.set('user_session', sessionToken, { 
+        httpOnly: true, 
+        secure: isSecure,
+        sameSite: 'lax', 
+        path: '/', 
+        maxAge: 60 * 60 * 24 * 7 
+      });
       return NextResponse.json({ success: true });
     }
 
@@ -107,11 +112,16 @@ export async function POST(request: Request) {
       await db.prepare('UPDATE users SET session_token = ? WHERE id = ?').bind(sessionToken, user.id).run();
 
       const cookieStore = await cookies();
-      cookieStore.set('user_session', sessionToken, { httpOnly: true, secure: isSecure, path: '/', maxAge: 60 * 60 * 24 * 7 });
+      cookieStore.set('user_session', sessionToken, { 
+        httpOnly: true, 
+        secure: isSecure, 
+        sameSite: 'lax',
+        path: '/', 
+        maxAge: 60 * 60 * 24 * 7 
+      });
       return NextResponse.json({ success: true });
     }
 
-    // بخش فراموشی رمز دست‌نخورده باقی مانده است
     if (action === 'forgot') {
       const { results } = await db.prepare('SELECT id, first_name FROM users WHERE email = ? LIMIT 1').bind(lowerEmail).all();
       if (!results || results.length === 0) return NextResponse.json({ error: 'کاربری با این ایمیل یافت نشد' }, { status: 400 });
