@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     if (!code) return NextResponse.redirect(`${baseUrl}/?error=no_code`);
 
     const env = await getEnv();
-    const clientId = env.GOOGLE_CLIENT_ID || '686114748186-7mds5gulof8vgpsqj3haf5i4fj21ve5l.apps.googleusercontent.com';
+    const clientId = env.GOOGLE_CLIENT_ID;
     const clientSecret = env.GOOGLE_CLIENT_SECRET;
 
     if (!clientSecret) return NextResponse.redirect(`${baseUrl}/?error=secret_not_found`);
