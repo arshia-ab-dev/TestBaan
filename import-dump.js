@@ -3,27 +3,26 @@ const path = require('path');
 const { createClient } = require('@libsql/client');
 
 async function importDump() {
-  const dumpFile = path.join(__dirname, 'remote-dump.sql');
+  // پشتیبانی از نام فایل ورودی (پیش‌فرض: remote-dump.sql)
+  const fileName = process.argv[2] || 'remote-dump.sql';
+  const dumpFile = path.join(__dirname, fileName);
   const dbFile = path.join(__dirname, 'testbaan.db');
 
   if (!fs.existsSync(dumpFile)) {
-    console.error('❌ فایل remote-dump.sql در پوشه پروژه یافت نشد! ابتدا آن را دانلود کرده و در پوشه پروژه قرار دهید.');
+    console.error(`❌ فایل ${fileName} در پوشه پروژه یافت نشد!`);
     process.exit(1);
   }
 
-  // حذف دیتابیس قبلی برای جایگزینی تمیز
   if (fs.existsSync(dbFile)) {
     fs.unlinkSync(dbFile);
   }
 
-  const client = createClient({
-    url: `file:${dbFile}`
-  });
+  const client = createClient({ url: `file:${dbFile}` });
 
-  console.log('⏳ در حال ایمپورت داده‌های ورکر به دیتابیس محلی...');
+  console.log(`⏳ در حال ایمپورت ${fileName} به دیتابیس محلی...`);
   const sql = fs.readFileSync(dumpFile, 'utf8');
   await client.executeMultiple(sql);
-  console.log('✅ تمام اطلاعات دیتابیس کلودفلر با موفقیت روی testbaan.db ویندوز لود شد!');
+  console.log('✅ تمام اطلاعات با موفقیت روی testbaan.db بارگذاری شد!');
 }
 
 importDump().catch(console.error);
