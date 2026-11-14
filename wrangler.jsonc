@@ -4,7 +4,8 @@
 	"main": ".open-next/worker.js",
 	"compatibility_date": "2026-08-08",
 	"compatibility_flags": [
-		"nodejs_compat"
+		"nodejs_compat",
+		"global_fetch_strictly_public"
 	],
 	"assets": {
 		"binding": "ASSETS",
@@ -16,12 +17,7 @@
 	"d1_databases": [
 		{
 			"binding": "testbaan_db",
-			"database_name": "testbaan-db",
-			"database_id": "8a4de652-f856-479e-9547-4820f177d424",
-      "migrations_dir": "migrations"
+			"database_name": "testbaan-db"
 		}
-	],
-  "vars": {
-    "GOOGLE_CLIENT_ID": "686114748186-7mds5gulof8vgpsqj3haf5i4fj21ve5l.apps.googleusercontent.com"
-  }
+	]
 }
