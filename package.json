@@ -16,8 +16,10 @@
     "cf-dev": "wrangler dev",
     "cf-dev-300": "wrangler dev --port 3000",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv ./cloudflare-env.d.ts",
-    "db:export": "wrangler d1 export testbaan-db --remote --output=remote-dump.sql",
-    "db:import": "node import-dump.js"
+    "db:export-cf": "wrangler d1 export testbaan-db --remote --output=remote-dump.sql",
+    "db:import-local": "node import-dump.js",
+    "db:export-local": "node export-local.js",
+    "db:import-cf": "wrangler d1 execute testbaan-db --remote --file=local-dump.sql"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",
