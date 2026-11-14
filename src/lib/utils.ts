@@ -16,23 +16,26 @@ export function toEnNum(val: string | number | null | undefined): string {
   return result;
 }
 
-// تابع تشخیص دقیق دامنه اصلی سایت
 export function getBaseUrl(request?: Request): string {
-  // ۱. بررسی متغیرهای محیطی با فیلتر کردن کاراکتر پنهان BOM ویندوز
-  let envUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
-  if (envUrl) {
-    envUrl = envUrl.replace(/^\uFEFF/, '').trim(); // حذف BOM
-    return envUrl.replace(/\/$/, '');
-  }
-
-  // ۲. استخراج دقیق پروتکل از خود ریکوئست
+  // اگر درخواست از سمت کلاینت آمده، همیشه دامنه جاری مرورگر را اولویت بده
   if (request) {
     try {
+      const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+      const proto = request.headers.get('x-forwarded-proto') || 'http';
+      if (host) {
+        // برای لوکال‌هاست پروتکل http و برای بقیه دامنه‌ها https
+        const cleanProto = host.includes('localhost') ? 'http' : proto;
+        return `${cleanProto}://${host}`;
+      }
       const url = new URL(request.url);
-      const host = request.headers.get('x-forwarded-host') || url.host;
-      const proto = request.headers.get('x-forwarded-proto') || url.protocol.replace(':', '');
-      return `${proto}://${host}`;
+      return `${url.protocol}//${url.host}`;
     } catch {}
+  }
+
+  // در صورت نبود درخواست (Fallback)
+  let envUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL;
+  if (envUrl) {
+    return envUrl.replace(/^\uFEFF/, '').trim().replace(/\/$/, '');
   }
 
   return 'http://localhost:3000';
